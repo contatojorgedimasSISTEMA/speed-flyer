@@ -207,6 +207,17 @@ app.post('/api/flyer/generate', auth, async (req, res) => {
   }
 
   try {
+    // Monta mensagem para a Anthropic
+    const msgs = [];
+    if (imageBase64) {
+      msgs.push({ role:'user', content:[
+        { type:'image', source:{ type:'base64', media_type:'image/jpeg', data:imageBase64 } },
+        { type:'text', text: description + '\n\nUse a imagem como referencia visual.' }
+      ]});
+    } else {
+      msgs.push({ role:'user', content: description });
+    }
+
     const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -214,13 +225,18 @@ app.post('/api/flyer/generate', auth, async (req, res) => {
         'x-api-key': process.env.ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01'
       },
-      body: JSON.stringify({ model: 'claude-opus-4-6', max_tokens: 4096, system: SYSTEM_PROMPT, messages })
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 4000,
+        system: SYSTEM_PROMPT,
+        messages: msgs
+      })
     });
 
     const aiData = await aiRes.json();
     if (!aiRes.ok) throw new Error(aiData.error?.message || 'Erro na IA');
 
-    const raw = aiData.content[0].text;
+    const raw = aiData.content?.[0]?.text;
     let result;
     try {
       result = JSON.parse(raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim());
