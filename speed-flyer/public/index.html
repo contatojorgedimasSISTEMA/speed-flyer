@@ -327,7 +327,25 @@ function logout(){token='';localStorage.removeItem('sf_token');user=null;documen
 async function subscribe(plan){loading(true,'Ativando...');try{const r=await api('POST','/api/payment/create-session',{plan});if(r.demo){user.plan=plan;toast(r.message);await goDash();}else if(r.url){window.location.href=r.url;}}catch(e){toast(e.message);}loading(false);}
 function resetChat(){document.getElementById('msgs').innerHTML='';curHTML=null;document.getElementById('pph').style.display='flex';document.getElementById('pfwrap').style.display='none';document.getElementById('bdl').style.display='none';document.getElementById('uparea').innerHTML='';upB64=null;const nm=user?(', '+user.name.split(' ')[0]):'';addMsg('a','Ola'+nm+'! Sou o Speed Flyer AI. Me diga o que quer criar - pode escrever, usar o microfone ou enviar uma foto.');}
 function addMsg(r,c,isAudio){const a=document.getElementById('msgs');const d=document.createElement('div');const t=new Date().getHours()+':'+String(new Date().getMinutes()).padStart(2,'0');if(isAudio&&r==='u'){d.className='abub';d.innerHTML='<div class="aic"><svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/></svg></div><div class="awaves">'+Array(7).fill(0).map(()=>'<div class="abar" style="height:'+(4+Math.round(Math.random()*12))+'px"></div>').join('')+'</div><span style="font-size:11px;color:rgba(255,255,255,.8)">'+c+'</span>';}else{d.className='msg '+r;d.innerHTML='<div class="bub">'+c+'</div><span class="mt">'+t+'</span>';}a.appendChild(d);a.scrollTop=a.scrollHeight;}
-function addFlyerCard(html){const a=document.getElementById('msgs');const wrap=document.createElement('div');wrap.style.cssText='align-self:flex-start;display:flex;flex-direction:column;gap:0';const card=document.createElement('div');card.className='flyer-card';const esc2=s=>(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');card.innerHTML='<div class="flyer-thumb" onclick="lbHTML=curHTML;openLightboxWith(curHTML)"><iframe srcdoc="'+esc2(html)+'" scrolling="no"></iframe></div><div class="flyer-acts"><button class="fa-btn ver" onclick="lbHTML=curHTML;openLightboxWith(curHTML)"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>Ver maior</button><button class="fa-btn dl" onclick="lbHTML=curHTML;openLightboxWith(curHTML);setTimeout(()=>toast('Escolha PNG ou JPG'),300)"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg>Baixar</button></div><button class="fa-edit" onclick="editFlyer()">Alterar este flyer</button>';wrap.appendChild(card);a.appendChild(wrap);a.scrollTop=a.scrollHeight;}
+function addFlyerCard(html){
+  var a=document.getElementById('msgs');
+  var wrap=document.createElement('div');
+  wrap.style.cssText='align-self:flex-start;display:flex;flex-direction:column;gap:0';
+  var card=document.createElement('div');card.className='flyer-card';
+  var thumb=document.createElement('div');thumb.className='flyer-thumb';
+  thumb.onclick=function(){lbHTML=html;openLightboxWith(html);};
+  var ifr=document.createElement('iframe');ifr.scrolling='no';ifr.srcdoc=html;
+  thumb.appendChild(ifr);card.appendChild(thumb);
+  var acts=document.createElement('div');acts.className='flyer-acts';
+  var bv=document.createElement('button');bv.className='fa-btn ver';
+  bv.innerHTML='Ver maior';bv.onclick=function(){lbHTML=html;openLightboxWith(html);};
+  var bd=document.createElement('button');bd.className='fa-btn dl';
+  bd.innerHTML='Baixar';bd.onclick=function(){lbHTML=html;openLightboxWith(html);setTimeout(function(){toast("Escolha PNG ou JPG");},300);};
+  acts.appendChild(bv);acts.appendChild(bd);card.appendChild(acts);
+  var be=document.createElement('button');be.className='fa-edit';
+  be.textContent='Alterar este flyer';be.onclick=editFlyer;
+  card.appendChild(be);wrap.appendChild(card);a.appendChild(wrap);a.scrollTop=a.scrollHeight;
+}
 function addTyping(){const a=document.getElementById('msgs');const d=document.createElement('div');d.className='msg a';d.id='typing';d.innerHTML='<div class="typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>';a.appendChild(d);a.scrollTop=a.scrollHeight;}
 function rmTyping(){const t=document.getElementById('typing');if(t)t.remove();}
 async function send(vText,isVoice){const inp=document.getElementById('tinput');const txt=vText||inp.value.trim();if(!txt&&!upB64)return;if(isVoice){addMsg('u',fmt(recSec)+'s',true);if(txt)addMsg('u',txt);}else addMsg('u',txt);inp.value='';ar(inp);const b64=upB64;document.getElementById('uparea').innerHTML='';upB64=null;addTyping();try{const r=await api('POST','/api/flyer/generate',{description:txt,imageBase64:b64||undefined});rmTyping();addMsg('a',r.mensagem||'Flyer criado! Clique em Ver maior para ampliar e baixar.');addFlyerCard(r.html);lbHTML=r.html;curHTML=r.html;renderFlyer(r.html);if(user&&user.plan==='starter'){user.flyers_used=(user.flyers_used||0)+1;document.getElementById('usage-info').textContent=user.flyers_used+'/30 este mes';}if(window.innerWidth<=700)mobTab('preview');}catch(e){rmTyping();addMsg('a','Erro: '+e.message);}}
